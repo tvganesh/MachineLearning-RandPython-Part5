@@ -26,6 +26,9 @@ As with my previous posts in this series, this post is largely based on the foll
 1. [Statistical Learning](https://lagunita.stanford.edu/courses/HumanitiesandScience/StatLearning/Winter2015/about), Prof Trevor Hastie & Prof Robert Tibesherani, Online Stanford
 2. [Applied Machine Learning in Python](https://www.coursera.org/learn/python-machine-learning) Prof Kevyn-Collin Thomson, University Of Michigan, Coursera
 
+You can download this R Markdown file and associated data files from Github at [MachineLearning-RandPython-Part5](https://github.com/tvganesh/MachineLearning-RandPython-Part5)
+
+For this part I have used the data sets from [UCI Machine Learning repository](https://archive.ics.uci.edu/ml/datasets.html)([Communities and Crime](https://archive.ics.uci.edu/ml/datasets/Communities+and+Crime) and [Auto MPG](https://archive.ics.uci.edu/ml/datasets/Auto+MPG))
 
 ## 1. Splines
 When performing regression (continuous or logistic) between a target variable and a 
@@ -39,13 +42,13 @@ piecewise-linear functions, piecewise-quadratic/cubic/4th order polynomial funct
 Since each section has a different cubic spline, there could be discontinuities (or breaks) at these knots. To prevent these discontinuities 'natural splines' and 'smoothing splines' ensure that the seperate cubic functions have 2nd order continuity at these knots with the adjacent splines. 2nd order continuity  implies that the value, 1st order derivative and 2nd order derivative at these knots are equal.
 
 A cubic spline with knots 
-$$\varphi_{k}$$, k=1,2,3,..K is a piecewise cubic polynomialwith continuous derivative upto order 2 at each knot
-$$y_{i} = \beta_{0} +\beta_{1}b_{1}(x_{i}) +\beta_{2}b_{2}(x_{i}) + .. +  \beta_{K+3}b_{K+3}(x_{i}) + \epsilon_{i}$$
-For each ($$x_{i},y{i}$$) the basis functions $$b_{i}$$ are called 'basis' functions
-$$b_{1}(x_{i})=x_{i}$$
-$$b_{2}(x_{i})=x_{i}^2$$
-$$b_{3}(x_{i})=x_{i}^3$$
-$$b_{k+3}(x_{i})=(x_{i}-\varphi_{k})^3$$ 
+latex varphi_{k} , k=1,2,3,..K is a piecewise cubic polynomialwith continuous derivative upto order 2 at each knot
+latex y_{i} = \beta_{0} +\beta_{1}b_{1}(x_{i}) +\beta_{2}b_{2}(x_{i}) + .. +  \beta_{K+3}b_{K+3}(x_{i}) + \epsilon_{i}
+For each (latex x_{i},y{i}) the basis functions latex b_{i} are called 'basis' functions
+latex b_{1}(x_{i})=x_{i}
+latex b_{2}(x_{i})=x_{i}^2
+latex b_{3}(x_{i})=x_{i}^3
+latex b_{k+3}(x_{i})=(x_{i}-\varphi_{k})^3
 where k=1,2,3... K
 The 1st and 2nd derivatives of cubic splines are continuous at the knots. The splines provide a smooth continuous fit to the data by fitting different splines to different sections of the data
 
@@ -225,7 +228,7 @@ plt.savefig('fig2.png', bbox_inches='tight')
 ## 1.2 Generalized Additiive models (GAMs)
 Generalized Additive Models (GAMs) is a really powerful ML tool. 
 
-$$y_{i} = \beta_{0} + f_{1}(x_{i1}) + f_{2}(x_{i2}) + .. +f_{p}(x_{ip}) + \epsilon_{i}$$
+y_{i} = \beta_{0} + f_{1}(x_{i1}) + f_{2}(x_{i2}) + .. +f_{p}(x_{ip}) + \epsilon_{i}
 In GAMs  we use a  different functions for each of the variables. GAMs give a much better fit since we can choose any function for the different sections
 
 ## 1.2a Generalized Additive Models (GAMs) - R Code
@@ -545,17 +548,29 @@ X=df[['crimeRate','zone', 'indus','charles','nox','rooms', 'age','distances','hi
 y=df['medianValue']
 
 cvError=[]
+oobError=[]
 for i in range(1,13):
-    regr = RandomForestRegressor(max_depth=4, n_estimators=400,max_features=i,random_state=0)
+    regr = RandomForestRegressor(max_depth=4, n_estimators=400,max_features=i,oob_score=True,random_state=0)
     mse= np.mean(cross_val_score(regr, X, y, cv=5,scoring = 'neg_mean_squared_error'))
     # Since this is neg_mean_squared_error I have inverted the sign to get MSE
     cvError.append(-mse)
+    # Fit on all data to compute OOB error
+    regr.fit(X, y)
+    # Record the OOB error for each `max_features=i` setting
+    oob = 1 - regr.oob_score_
+    oobError.append(oob)
     
 plt.plot(range(1,13),cvError)
 plt.title("Random Forest - 5-fold CV- Mean Squared Error vs max_features (variable no of features)")
 plt.xlabel("max_features (variable no of features)")
 plt.ylabel("Mean Squared Error")
 plt.savefig('fig5.png', bbox_inches='tight')
+
+plt.plot(range(1,13),oobError)
+fig2=plt.title("Random Forest - OOB Error vs max_features (variable no of features)")
+fig2=plt.xlabel("max_features (variable no of features)")
+fig2=plt.ylabel("OOB Error")
+fig2.figure.savefig('fig7.png', bbox_inches='tight')
 
 ```
 
