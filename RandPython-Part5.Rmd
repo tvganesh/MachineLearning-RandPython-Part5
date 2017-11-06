@@ -442,7 +442,7 @@ varImpPlot(rfBoston)
 ```
 
 
-## 1.4b Random Forest - OOB and Cross Validation Error
+## 1.4b Random Forest - OOB and Cross Validation Error - R code
 The figure below shows the OOB error and the Cross Validation error vs the 'mtry'. Here
 mtry indicates the number of random features that are chosen at each split. The lowest
 test error occurs when mtry = 8
@@ -522,7 +522,7 @@ plt.savefig('fig4.png', bbox_inches='tight')
 ```
 
 
-## 1.4d Random Forest - Cross Validation - Python code
+## 1.4d Random Forest - OOB and Cross Validation Error - Python code
 As with R the 'max_features' determines the random number of features the random forest
 will use at each split. The plot shows that when max_features=8 the MSE is lowest
 ```{python}
@@ -540,17 +540,35 @@ X=df[['crimeRate','zone', 'indus','charles','nox','rooms', 'age','distances','hi
 y=df['medianValue']
 
 cvError=[]
+oobError=[]
+oobMSE=[]
 for i in range(1,13):
-    regr = RandomForestRegressor(max_depth=4, n_estimators=400,max_features=i,random_state=0)
+    regr = RandomForestRegressor(max_depth=4, n_estimators=400,max_features=i,oob_score=True,random_state=0)
     mse= np.mean(cross_val_score(regr, X, y, cv=5,scoring = 'neg_mean_squared_error'))
     # Since this is neg_mean_squared_error I have inverted the sign to get MSE
     cvError.append(-mse)
+    # Fit on all data to compute OOB error
+    regr.fit(X, y)
+    # Record the OOB error for each `max_features=i` setting
+    oob = 1 - regr.oob_score_
+    oobError.append(oob)
+    # Get the  Out of Bag prediction
+    oobPred=regr.oob_prediction_ 
+    # Compute the Mean Squared Error between OOB Prediction and target
+    mseOOB=np.mean(np.square(oobPred-y))
+    oobMSE.append(mseOOB)
     
-plt.plot(range(1,13),cvError)
-plt.title("Random Forest - 5-fold CV- Mean Squared Error vs max_features (variable no of features)")
-plt.xlabel("max_features (variable no of features)")
-plt.ylabel("Mean Squared Error")
-plt.savefig('fig5.png', bbox_inches='tight')
+# Set max_features
+maxFeatures=np.arange(1,13)   
+cvError=pd.DataFrame(cvError,index=maxFeatures)
+oobMSE=pd.DataFrame(oobMSE,index=maxFeatures)
+#Create a dataframe
+df=pd.concat([cvError,oobMSE],axis=1)
+df.columns=['CV Error','OOB MSE']
+
+fig8=df.plot()
+fig8=plt.title('Random forest - CV Error and OOB Error vs max_features')
+fig8.figure.savefig('fig8.png', bbox_inches='tight')
 
 ```
 
